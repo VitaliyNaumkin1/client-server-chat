@@ -51,8 +51,8 @@ public class Server {
     }
 
     public synchronized void unsubscribe(ClientHandler clientHandler) {
-        broadcastMessage("Отключился клиент " + clientHandler.getUserName());
         clients.remove(clientHandler);
+        broadcastMessage("Отключился клиент " + clientHandler.getUserName());
     }
 
     public synchronized boolean isUserAlreadyExist(String userName) {
@@ -64,6 +64,14 @@ public class Server {
         return false;
     }
 
+    public synchronized ClientHandler getClientHandlerByName(String name) {
+        for (ClientHandler c : clients) {
+            if (c.getUserName().equals(name)) {
+                return c;
+            }
+        }
+        return null;
+    }
 
     public synchronized void sendPrivateMessage(ClientHandler sender, String receiverUserName, String message) {
         ClientHandler receiver = null;

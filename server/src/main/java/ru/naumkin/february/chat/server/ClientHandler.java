@@ -46,6 +46,32 @@ public class ClientHandler {
                     String privateMessage = messageElements[2];
                     server.sendPrivateMessage(this, receiverUserName, privateMessage);
                 }
+                if (message.startsWith("/kick ")) {
+                    if (messageElements.length != 2) {
+                        sendMessage("СЕРВЕР: не возможно выполнить kick пользователя.Для удаления пользователя используйте шаблон : /kick \"имя пользователя\"");
+                        continue;
+                    }
+                    String userNameForKick = messageElements[1];
+                    if (!server.isUserAlreadyExist(userNameForKick)) {
+                        sendMessage("СЕРВЕР: не возможно выполнить kick пользователя " + userNameForKick + ", такого пользовтеля нету в чате");
+                        continue;
+                    }
+
+                    UserRole roleOfTheUserBeingKicked = server.getUserService().getUserRole(userNameForKick);
+                    UserRole roleOfTheRequestedKick = server.getUserService().getUserRole(userName);
+                    if (roleOfTheRequestedKick.equals(UserRole.ADMIN)) {
+                        if (!roleOfTheUserBeingKicked.equals(UserRole.ADMIN)) {
+                            ClientHandler clientHandlerWhoWillBeKicked = server.getClientHandlerByName(userNameForKick);
+                            clientHandlerWhoWillBeKicked.sendMessage("Вы были кикнуты с сервера пользователем " + userName);
+                            server.unsubscribe(clientHandlerWhoWillBeKicked);
+                            server.broadcastMessage("ADMIN - " + userName + " кикнул пользователя " + userNameForKick + " из чата");
+                        } else {
+                            sendMessage("СЕРВЕР: вы не можете кикнуть пользователя с правами ADMIN являясь ADMIN");
+                        }
+                    } else {
+                        sendMessage("СЕРВЕР: вы не обладаете правами ADMIN для кика пользователя из чата");
+                    }
+                }
             } else {
                 server.broadcastMessage(userName + ": " + message);
             }
@@ -146,7 +172,7 @@ public class ClientHandler {
             return false;
         }
 
-        server.getUserService().createNewUser(login, password, registrationUserName);
+        server.getUserService().createNewUser(login, password, registrationUserName, UserRole.USER);
         userName = registrationUserName;
         sendMessage("/authok " + userName);
         sendMessage("СЕРВЕР: " + userName + ", вы успешно прошли регистрацию добро пожаловать в чат");
