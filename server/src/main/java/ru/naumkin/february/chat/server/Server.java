@@ -38,6 +38,10 @@ public class Server {
         }
     }
 
+    public synchronized void kickUser(ClientHandler clientHandler, String userNameForKick, String kickersName) {
+        unsubscribe(clientHandler);
+        broadcastMessage("ADMIN - " + kickersName + " кикнул пользователя " + userNameForKick + " из чата");
+    }
 
     public synchronized void broadcastMessage(String message) {
         for (ClientHandler clientHandler : clients) {
@@ -87,5 +91,4 @@ public class Server {
         sender.sendMessage("ЛИЧНОЕ СООБЩЕНИЕ ПОЛЬЗОВАТЕЛЮ " + sender.getUserName() + " : " + message);
         receiver.sendMessage("ЛИЧНОЕ СООБЩЕНИЕ ОТ ПОЛЬЗОВАТЕЛЯ " + sender.getUserName() + " : " + message);
     }
-
 }

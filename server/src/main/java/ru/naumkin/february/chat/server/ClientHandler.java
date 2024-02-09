@@ -47,30 +47,7 @@ public class ClientHandler {
                     server.sendPrivateMessage(this, receiverUserName, privateMessage);
                 }
                 if (message.startsWith("/kick ")) {
-                    if (messageElements.length != 2) {
-                        sendMessage("СЕРВЕР: не возможно выполнить kick пользователя.Для удаления пользователя используйте шаблон : /kick \"имя пользователя\"");
-                        continue;
-                    }
-                    String userNameForKick = messageElements[1];
-                    if (!server.isUserAlreadyExist(userNameForKick)) {
-                        sendMessage("СЕРВЕР: не возможно выполнить kick пользователя " + userNameForKick + ", такого пользовтеля нету в чате");
-                        continue;
-                    }
-
-                    UserRole roleOfTheUserBeingKicked = server.getUserService().getUserRole(userNameForKick);
-                    UserRole roleOfTheRequestedKick = server.getUserService().getUserRole(userName);
-                    if (roleOfTheRequestedKick.equals(UserRole.ADMIN)) {
-                        if (!roleOfTheUserBeingKicked.equals(UserRole.ADMIN)) {
-                            ClientHandler clientHandlerWhoWillBeKicked = server.getClientHandlerByName(userNameForKick);
-                            clientHandlerWhoWillBeKicked.sendMessage("Вы были кикнуты с сервера пользователем " + userName);
-                            server.unsubscribe(clientHandlerWhoWillBeKicked);
-                            server.broadcastMessage("ADMIN - " + userName + " кикнул пользователя " + userNameForKick + " из чата");
-                        } else {
-                            sendMessage("СЕРВЕР: вы не можете кикнуть пользователя с правами ADMIN являясь ADMIN");
-                        }
-                    } else {
-                        sendMessage("СЕРВЕР: вы не обладаете правами ADMIN для кика пользователя из чата");
-                    }
+                    tryToKick(message);
                 }
             } else {
                 server.broadcastMessage(userName + ": " + message);
@@ -179,5 +156,36 @@ public class ClientHandler {
         server.subscribe(this);
         return true;
     }
+
+    private void tryToKick(String message) {
+        String[] messageElements = message.split(" ");
+        String userNameForKick = messageElements[1];
+        if (messageElements.length != 2) {
+            sendMessage("СЕРВЕР: не возможно выполнить kick пользователя.Для удаления пользователя используйте шаблон : /kick \"имя пользователя\"");
+            return;
+        }
+        if (!server.isUserAlreadyExist(userNameForKick)) {
+            sendMessage("СЕРВЕР: не возможно выполнить kick пользователя " + userNameForKick + ", такого пользовтеля нету в чате");
+            return;
+        }
+
+        UserRole roleOfTheUserBeingKicked = server.getUserService().getUserRole(userNameForKick);
+        UserRole roleOfTheRequesterKick = server.getUserService().getUserRole(userName);
+
+        if (!roleOfTheRequesterKick.equals(UserRole.ADMIN)) {
+            sendMessage("СЕРВЕР: вы не обладаете правами ADMIN для кика пользователя из чата");
+            return;
+        }
+
+        if (roleOfTheUserBeingKicked.equals(UserRole.ADMIN)) {
+            sendMessage("СЕРВЕР: вы не обладаете правами для кика другого ADMIN");
+            return;
+        }
+
+        ClientHandler clientHandlerWhoWillBeKicked = server.getClientHandlerByName(userNameForKick);
+        server.kickUser(clientHandlerWhoWillBeKicked, userNameForKick, userName);
+        clientHandlerWhoWillBeKicked.sendMessage("СЕРВЕР: вы были кикнуты с сервера пользователем " + userName);
+    }
+
 
 }
