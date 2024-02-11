@@ -46,6 +46,9 @@ public class ClientHandler {
                     String privateMessage = messageElements[2];
                     server.sendPrivateMessage(this, receiverUserName, privateMessage);
                 }
+                if (message.startsWith("/kick ")) {
+                    tryToKick(message);
+                }
             } else {
                 server.broadcastMessage(userName + ": " + message);
             }
@@ -146,12 +149,43 @@ public class ClientHandler {
             return false;
         }
 
-        server.getUserService().createNewUser(login, password, registrationUserName);
+        server.getUserService().createNewUser(login, password, registrationUserName, UserRole.USER);
         userName = registrationUserName;
         sendMessage("/authok " + userName);
         sendMessage("СЕРВЕР: " + userName + ", вы успешно прошли регистрацию добро пожаловать в чат");
         server.subscribe(this);
         return true;
     }
+
+    private void tryToKick(String message) {
+        String[] messageElements = message.split(" ");
+        String userNameForKick = messageElements[1];
+        if (messageElements.length != 2) {
+            sendMessage("СЕРВЕР: не возможно выполнить kick пользователя.Для удаления пользователя используйте шаблон : /kick \"имя пользователя\"");
+            return;
+        }
+        if (!server.isUserAlreadyExist(userNameForKick)) {
+            sendMessage("СЕРВЕР: не возможно выполнить kick пользователя " + userNameForKick + ", такого пользовтеля нету в чате");
+            return;
+        }
+
+        UserRole roleOfTheUserBeingKicked = server.getUserService().getUserRole(userNameForKick);
+        UserRole roleOfTheRequesterKick = server.getUserService().getUserRole(userName);
+
+        if (!roleOfTheRequesterKick.equals(UserRole.ADMIN)) {
+            sendMessage("СЕРВЕР: вы не обладаете правами ADMIN для кика пользователя из чата");
+            return;
+        }
+
+        if (roleOfTheUserBeingKicked.equals(UserRole.ADMIN)) {
+            sendMessage("СЕРВЕР: вы не обладаете правами для кика другого ADMIN");
+            return;
+        }
+
+        ClientHandler clientHandlerWhoWillBeKicked = server.getClientHandlerByName(userNameForKick);
+        server.kickUser(clientHandlerWhoWillBeKicked, userNameForKick, userName);
+        clientHandlerWhoWillBeKicked.sendMessage("СЕРВЕР: вы были кикнуты с сервера пользователем " + userName);
+    }
+
 
 }

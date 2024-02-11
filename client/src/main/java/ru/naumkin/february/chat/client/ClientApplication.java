@@ -11,7 +11,7 @@ public class ClientApplication {
 
     public static void main(String[] args) {
         try (
-                Socket socket = new Socket("localhost", 8189);
+                Socket socket = new Socket("localhost", 8090);
                 DataInputStream in = new DataInputStream(socket.getInputStream());
                 DataOutputStream out = new DataOutputStream(socket.getOutputStream())
         ) {
