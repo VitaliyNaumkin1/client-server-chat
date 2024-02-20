@@ -23,7 +23,7 @@ public class Server {
     public void start() {
         try (ServerSocket serverSocket = new ServerSocket(port)) {
             System.out.printf("Сервер запущен на порту %d. Ожидание подключения клиентов\n", port);
-            userService = new InMemoryUserService();
+            userService = new PostgresUserService();
             System.out.println("Запущен сервис для работы с пользователями");
             while (true) {
                 Socket socket = serverSocket.accept();
@@ -38,6 +38,10 @@ public class Server {
         }
     }
 
+    public synchronized void kickUser(ClientHandler clientHandler, String userNameForKick, String kickersName) {
+        unsubscribe(clientHandler);
+        broadcastMessage("ADMIN - " + kickersName + " кикнул пользователя " + userNameForKick + " из чата");
+    }
 
     public synchronized void broadcastMessage(String message) {
         for (ClientHandler clientHandler : clients) {
@@ -51,8 +55,8 @@ public class Server {
     }
 
     public synchronized void unsubscribe(ClientHandler clientHandler) {
-        broadcastMessage("Отключился клиент " + clientHandler.getUserName());
         clients.remove(clientHandler);
+        broadcastMessage("Отключился клиент " + clientHandler.getUserName());
     }
 
     public synchronized boolean isUserAlreadyExist(String userName) {
@@ -64,6 +68,14 @@ public class Server {
         return false;
     }
 
+    public synchronized ClientHandler getClientHandlerByName(String name) {
+        for (ClientHandler c : clients) {
+            if (c.getUserName().equals(name)) {
+                return c;
+            }
+        }
+        return null;
+    }
 
     public synchronized void sendPrivateMessage(ClientHandler sender, String receiverUserName, String message) {
         ClientHandler receiver = null;
@@ -79,5 +91,4 @@ public class Server {
         sender.sendMessage("ЛИЧНОЕ СООБЩЕНИЕ ПОЛЬЗОВАТЕЛЮ " + sender.getUserName() + " : " + message);
         receiver.sendMessage("ЛИЧНОЕ СООБЩЕНИЕ ОТ ПОЛЬЗОВАТЕЛЯ " + sender.getUserName() + " : " + message);
     }
-
 }
